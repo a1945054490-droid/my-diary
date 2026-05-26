@@ -73,6 +73,7 @@
         body.dark .settings-item { color: #d4d4d4; }
         body.dark .settings-item:hover { background: #3a3a3a; }
         body.dark .settings-item:not(:last-child) { border-bottom-color: #444; }
+        body.dark .header-dots:hover { background: rgba(255,255,255,0.15); }
 
         .diary-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; position: relative; }
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; font-size: 32px; border: none; box-shadow: 0 4px 15px rgba(124,58,237,0.4); cursor: pointer; z-index: 100; display: flex; align-items: center; justify-content: center; }
@@ -104,7 +105,6 @@
         .tab-bar { display: flex; background: white; border-bottom: 1px solid #e5e7eb; position: sticky; top: 56px; z-index: 9; }
         .tab { flex: 1; padding: 12px; text-align: center; font-size: 14px; cursor: pointer; color: #6b7280; border-bottom: 2px solid transparent; }
         .tab.active { color: #7c3aed; border-bottom-color: #7c3aed; font-weight: 600; }
-        .badge { background: #ef4444; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 4px; }
 
         .more-btn { 
             background: none; border: none; font-size: 18px; color: #9ca3af; 
@@ -183,11 +183,15 @@
             background: none; border: none;
         }
 
-        /* Settings Menu */
-        .header-btn {
-            background: none; border: none; color: white; font-size: 18px;
-            cursor: pointer; padding: 6px; border-radius: 8px; position: relative;
+        /* Header dots button */
+        .header-dots {
+            background: none; border: none; color: white; cursor: pointer;
+            padding: 6px 10px; border-radius: 8px; font-size: 18px; letter-spacing: 2px;
+            font-weight: bold;
         }
+        .header-dots:hover { background: rgba(255,255,255,0.2); }
+
+        /* Settings Menu */
         .settings-menu {
             display: none; position: absolute; top: 100%; right: 0; margin-top: 8px;
             background: white; border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.18);
@@ -258,7 +262,7 @@
         <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
         <h1>我的日记</h1>
         <div style="position:relative;">
-            <button class="header-btn" id="settings-btn" onclick="toggleSettings(event)">⚙️</button>
+            <button class="header-dots" id="settings-btn" onclick="toggleSettings(event)">•••</button>
             <div class="settings-menu" id="settings-menu">
                 <button class="settings-item" onclick="exportData()">📤 导出备份</button>
                 <button class="settings-item" onclick="document.getElementById('import-file').click()">📥 导入恢复</button>
@@ -272,7 +276,7 @@
     <div class="tab-bar">
         <div class="tab active" id="tab-diary" onclick="switchTab('diary')">📝 日记</div>
         <div class="tab" id="tab-calendar" onclick="switchTab('calendar')">📅 日历</div>
-        <div class="tab" id="tab-trash" onclick="switchTab('trash')">🗑️ 回收站 <span class="badge" id="trash-badge" style="display:none;">0</span></div>
+        <div class="tab" id="tab-trash" onclick="switchTab('trash')">🗑️ 回收站</div>
     </div>
 
     <div id="diary-page">
@@ -380,13 +384,11 @@
             }
             
             if (!pwd) {
-                // First time - setup mode
                 document.getElementById('lock-title').textContent = '设置密码';
                 document.getElementById('lock-subtitle').textContent = '设置一个4-8位数字密码保护你的日记';
                 document.getElementById('lock-btn').textContent = '设置密码';
                 document.getElementById('lock-skip').style.display = 'inline';
             } else {
-                // Unlock mode
                 document.getElementById('lock-title').textContent = '请输入密码';
                 document.getElementById('lock-subtitle').textContent = '输入密码解锁你的日记';
                 document.getElementById('lock-btn').textContent = '解锁';
@@ -401,20 +403,12 @@
             var errorEl = document.getElementById('lock-error');
 
             if (!pwd) {
-                // Setting password
-                if (val.length < 4) {
-                    errorEl.textContent = '密码至少4位';
-                    return;
-                }
-                if (!/^\d+$/.test(val)) {
-                    errorEl.textContent = '请输入纯数字密码';
-                    return;
-                }
+                if (val.length < 4) { errorEl.textContent = '密码至少4位'; return; }
+                if (!/^\d+$/.test(val)) { errorEl.textContent = '请输入纯数字密码'; return; }
                 localStorage.setItem('diary_password', val);
                 localStorage.removeItem('diary_lock_disabled');
                 document.getElementById('lock-screen').classList.add('hidden');
             } else {
-                // Verifying password
                 if (val === pwd) {
                     document.getElementById('lock-screen').classList.add('hidden');
                 } else {
@@ -457,7 +451,6 @@
             localStorage.setItem('diary_password', pwd);
             localStorage.removeItem('diary_lock_disabled');
             closePwdModal();
-            alert('密码修改成功！');
         }
 
         function removeLock() {
@@ -465,7 +458,6 @@
             showConfirm('确定关闭密码锁？', function() {
                 localStorage.removeItem('diary_password');
                 localStorage.setItem('diary_lock_disabled', 'true');
-                alert('密码锁已关闭');
             });
         }
 
@@ -504,20 +496,13 @@
             reader.onload = function(e) {
                 try {
                     var data = JSON.parse(e.target.result);
-                    if (!data.diaries || !Array.isArray(data.diaries)) {
-                        alert('文件格式错误');
-                        return;
-                    }
+                    if (!data.diaries || !Array.isArray(data.diaries)) return;
                     showConfirm('导入将覆盖当前所有数据，确定继续？', function() {
                         localStorage.setItem('diaries', JSON.stringify(data.diaries));
                         if (data.trash) localStorage.setItem('trash', JSON.stringify(data.trash));
                         renderDiaries();
-                        updateTrashBadge();
-                        alert('导入成功！共' + data.diaries.length + '篇日记');
                     });
-                } catch (err) {
-                    alert('文件解析失败');
-                }
+                } catch (err) {}
             };
             reader.readAsText(file);
             event.target.value = '';
@@ -608,13 +593,11 @@
                 html += '<div class="cal-weekday">' + wkdays[i] + '</div>';
             }
 
-            // Previous month days
             for (var i = firstDay - 1; i >= 0; i--) {
                 var day = daysInPrevMonth - i;
                 html += '<div class="cal-day other-month">' + day + '</div>';
             }
 
-            // Current month days
             for (var d = 1; d <= daysInMonth; d++) {
                 var dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
                 var classes = 'cal-day';
@@ -624,7 +607,6 @@
                 html += '<div class="' + classes + '" onclick="selectCalDate(\'' + dateStr + '\')">' + d + '</div>';
             }
 
-            // Next month days
             var totalCells = firstDay + daysInMonth;
             var remaining = (7 - totalCells % 7) % 7;
             for (var i = 1; i <= remaining; i++) {
@@ -645,7 +627,6 @@
             var listEl = document.getElementById('cal-day-diaries');
 
             if (!calSelectedDate) {
-                // Show all diaries of this month
                 var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
                 var monthStr = calYear + '-' + String(calMonth+1).padStart(2,'0');
                 var monthDiaries = diaries.filter(function(d) { return d.date.startsWith(monthStr); });
@@ -787,7 +768,6 @@
                 diaries = diaries.filter(function(d) { return d.id !== id; });
                 localStorage.setItem('diaries', JSON.stringify(diaries));
                 renderDiaries();
-                updateTrashBadge();
             });
         }
 
@@ -799,26 +779,19 @@
             if (item) { delete item.deletedAt; diaries.unshift(item); localStorage.setItem('diaries', JSON.stringify(diaries)); }
             trash = trash.filter(function(d) { return d.id !== id; });
             localStorage.setItem('trash', JSON.stringify(trash));
-            renderTrash(); updateTrashBadge();
+            renderTrash();
         }
         function permDelete(id) {
             showConfirm('永久删除？不可恢复！', function() {
                 var trash = JSON.parse(localStorage.getItem('trash') || '[]');
                 trash = trash.filter(function(d) { return d.id !== id; });
                 localStorage.setItem('trash', JSON.stringify(trash));
-                renderTrash(); updateTrashBadge();
+                renderTrash();
             });
         }
         function emptyTrash() {
             localStorage.setItem('trash', '[]');
-            renderTrash(); updateTrashBadge();
-        }
-
-        function updateTrashBadge() {
-            var trash = JSON.parse(localStorage.getItem('trash') || '[]');
-            var badge = document.getElementById('trash-badge');
-            badge.style.display = trash.length > 0 ? 'inline' : 'none';
-            badge.textContent = trash.length;
+            renderTrash();
         }
 
         // ===== Render =====
@@ -922,7 +895,6 @@
         })();
 
         renderDiaries();
-        updateTrashBadge();
     </script>
 </body>
 </html>
