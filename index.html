@@ -9,7 +9,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2ff; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+        
+        /* 关键：切换主题时统一给所有元素添加相同的过渡，确保同步 */
+        body.theme-transitioning,
+        body.theme-transitioning *,
+        body.theme-transitioning *::before,
+        body.theme-transitioning *::after {
+            transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease, background 0.4s ease !important;
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2ff; min-height: 100vh; }
         
         body.dark { background: #1a1a1a; color: #d4d4d4; }
         body.dark .diary-card { background: #2a2a2a; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
@@ -48,31 +57,31 @@
         body.dark .confirm-modal-box { background: #2a2a2a; color: #d4d4d4; }
         body.dark .confirm-cancel { background: #333; color: #d4d4d4; }
 
-        .diary-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; position: relative; transition: background 0.3s, box-shadow 0.3s; }
+        .diary-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; position: relative; }
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; font-size: 32px; border: none; box-shadow: 0 4px 15px rgba(124,58,237,0.4); cursor: pointer; z-index: 100; display: flex; align-items: center; justify-content: center; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
-        .modal-content { background: white; border-radius: 20px; padding: 24px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; transition: background 0.3s, color 0.3s; }
-        .mood-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #e5e7eb; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; background: white; transition: background 0.3s, border-color 0.3s; }
+        .modal-content { background: white; border-radius: 20px; padding: 24px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+        .mood-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #e5e7eb; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; background: white; }
         .mood-btn.selected { border-color: #7c3aed; background: #f3e8ff; }
-        textarea { width: 100%; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; font-size: 16px; resize: none; outline: none; min-height: 150px; transition: background 0.3s, border-color 0.3s, color 0.3s; }
+        textarea { width: 100%; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; font-size: 16px; resize: none; outline: none; min-height: 150px; }
         textarea:focus { border-color: #7c3aed; }
         .save-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; margin-top: 12px; }
-        .header { background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; padding: 16px 20px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; transition: background 0.3s; }
+        .header { background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; padding: 16px 20px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
         .header h1 { font-size: 20px; font-weight: 600; }
         .empty-state { text-align: center; padding: 60px 20px; color: #9ca3af; }
         .action-btn { font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; border: none; }
         .restore-btn { color: #10b981; background: #ecfdf5; }
         .perm-delete-btn { color: #ef4444; background: #fef2f2; }
-        .tab-bar { display: flex; background: white; border-bottom: 1px solid #e5e7eb; position: sticky; top: 56px; z-index: 9; transition: background 0.3s, border-color 0.3s; }
-        .tab { flex: 1; padding: 12px; text-align: center; font-size: 14px; cursor: pointer; color: #6b7280; border-bottom: 2px solid transparent; transition: color 0.3s; }
+        .tab-bar { display: flex; background: white; border-bottom: 1px solid #e5e7eb; position: sticky; top: 56px; z-index: 9; }
+        .tab { flex: 1; padding: 12px; text-align: center; font-size: 14px; cursor: pointer; color: #6b7280; border-bottom: 2px solid transparent; }
         .tab.active { color: #7c3aed; border-bottom-color: #7c3aed; font-weight: 600; }
         .badge { background: #ef4444; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 4px; }
 
         .more-btn { 
             background: none; border: none; font-size: 18px; color: #9ca3af; 
             cursor: pointer; padding: 8px 12px; border-radius: 8px;
-            letter-spacing: 2px; transition: background 0.2s, color 0.2s;
+            letter-spacing: 2px;
         }
         .more-btn:hover { background: #f3f4f6; color: #6b7280; }
 
@@ -148,7 +157,6 @@
 
     <button class="fab" id="fab-btn" onclick="openModal()">+</button>
 
-    <!-- 自定义确认弹窗 -->
     <div class="confirm-modal" id="confirm-modal">
         <div class="confirm-modal-box">
             <p id="confirm-msg">确定删除？</p>
@@ -159,7 +167,6 @@
         </div>
     </div>
 
-    <!-- 查看日记弹窗 -->
     <div class="modal" id="view-modal" onclick="if(event.target===this)closeViewModal()">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
@@ -171,7 +178,6 @@
         </div>
     </div>
 
-    <!-- 编辑日记弹窗 -->
     <div class="modal" id="modal" onclick="if(event.target===this)closeModal()">
         <div class="modal-content">
             <h2 style="font-size:18px; font-weight:600; margin-bottom:16px;" id="modal-title">写日记</h2>
@@ -195,7 +201,7 @@
         var editingId = null;
         var confirmCallback = null;
 
-        // ===== 修复核心：确认弹窗逻辑 =====
+        // ===== 确认弹窗 =====
         function showConfirm(msg, callback) {
             document.getElementById('confirm-msg').textContent = msg;
             document.getElementById('confirm-modal').classList.add('active');
@@ -205,19 +211,31 @@
             document.getElementById('confirm-modal').classList.remove('active');
         }
         function confirmAction() {
-            // 关键修复：先保存回调引用，再关闭弹窗，最后执行回调
             var cb = confirmCallback;
             confirmCallback = null;
             hideConfirm();
             if (cb) cb();
         }
 
-        // ===== 主题 =====
+        // ===== 主题切换（平滑且同步） =====
         function toggleTheme() {
+            // 1. 先给所有元素统一添加相同的过渡
+            document.body.classList.add('theme-transitioning');
+            
+            // 2. 强制浏览器应用过渡属性（触发重排）
+            document.body.offsetHeight;
+            
+            // 3. 切换主题class，此时所有元素用相同的transition同步动画
             var isDark = document.body.classList.toggle('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
             document.getElementById('theme-toggle').textContent = isDark ? '☀️' : '🌙';
+            
+            // 4. 动画结束后移除过渡class，避免影响其他交互
+            setTimeout(function() {
+                document.body.classList.remove('theme-transitioning');
+            }, 450);
         }
+
+        // 页面加载时不要有过渡动画
         (function() {
             if (localStorage.getItem('theme') === 'dark') {
                 document.body.classList.add('dark');
@@ -293,7 +311,7 @@
 
         function saveDiary() {
             var content = document.getElementById('diary-content').value.trim();
-            if (!content) { alert('请写点什么吧~'); return; }
+            if (!content) return;
             var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
             if (editingId) {
                 var item = diaries.find(function(d) { return d.id === editingId; });
@@ -313,7 +331,7 @@
             renderDiaries();
         }
 
-        // ===== 删除（移入回收站） =====
+        // ===== 删除 =====
         function deleteDiary(id) {
             showConfirm('确定移入回收站？', function() {
                 var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
@@ -361,7 +379,7 @@
             badge.textContent = trash.length;
         }
 
-        // ===== 渲染日记列表 =====
+        // ===== 渲染 =====
         function escapeHtml(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
         function renderDiaries() {
