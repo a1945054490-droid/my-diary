@@ -67,13 +67,13 @@
             width: 100% !important; 
             border: 1px solid #e5e7eb !important; 
             border-radius: 12px !important; 
-            padding: 16px 18px !important; 
+            padding: 8px 10px !important; 
             font-size: 16px !important; 
             resize: none !important; 
             outline: none !important; 
             min-height: 150px !important; 
             text-indent: 0 !important; 
-            line-height: 1.8 !important; 
+            line-height: 1.4 !important; 
         }
         textarea:focus { border-color: #7c3aed !important; }
         .save-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; margin-top: 12px; }
@@ -125,7 +125,7 @@
         }
         .search-box:focus { border-color: #7c3aed; }
 
-        .view-content { font-size: 16px; line-height: 1.8; color: #374151; white-space: pre-wrap; word-break: break-word; }
+        .view-content { font-size: 16px; line-height: 1.4; color: #374151; white-space: pre-wrap; word-break: break-word; }
 
         .confirm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.45); z-index: 300; align-items: center; justify-content: center; }
         .confirm-modal.active { display: flex; }
@@ -217,7 +217,6 @@
             return weekDays[d.getDay()];
         }
 
-        // ===== 确认弹窗 =====
         function showConfirm(msg, callback) {
             document.getElementById('confirm-msg').textContent = msg;
             document.getElementById('confirm-modal').classList.add('active');
@@ -233,7 +232,6 @@
             if (cb) cb();
         }
 
-        // ===== 主题切换 =====
         function toggleTheme() {
             document.body.classList.add('theme-transitioning');
             document.body.offsetHeight;
@@ -251,7 +249,6 @@
             }
         })();
 
-        // ===== Tab =====
         function switchTab(tab) {
             document.getElementById('tab-diary').classList.toggle('active', tab === 'diary');
             document.getElementById('tab-trash').classList.toggle('active', tab === 'trash');
@@ -261,7 +258,6 @@
             if (tab === 'trash') renderTrash();
         }
 
-        // ===== 点击空白关闭菜单 =====
         document.addEventListener('click', function() { closeAllMenus(); });
 
         function closeAllMenus() {
@@ -269,7 +265,6 @@
             for (var i = 0; i < menus.length; i++) menus[i].classList.remove('show');
         }
 
-        // ===== 查看 =====
         function viewDiary(id) {
             var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
             var item = diaries.find(function(d) { return d.id === id; });
@@ -281,7 +276,6 @@
         }
         function closeViewModal() { document.getElementById('view-modal').classList.remove('active'); }
 
-        // ===== 新建/编辑弹窗 =====
         function openModal() {
             editingId = null;
             document.getElementById('modal-title').textContent = '写日记';
@@ -344,7 +338,6 @@
             renderDiaries();
         }
 
-        // ===== 删除 =====
         function deleteDiary(id) {
             showConfirm('确定移入回收站？', function() {
                 var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
@@ -362,7 +355,6 @@
             });
         }
 
-        // ===== 回收站 =====
         function restoreDiary(id) {
             var trash = JSON.parse(localStorage.getItem('trash') || '[]');
             var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
@@ -392,7 +384,6 @@
             badge.textContent = trash.length;
         }
 
-        // ===== 渲染 =====
         function escapeHtml(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
 
         function renderDiaries() {
@@ -420,7 +411,7 @@
                     html += '<span style="font-size:20px;">' + d.mood + '</span>';
                 }
                 html += '</div>';
-                html += '<p style="font-size:15px;line-height:1.6;color:#374151;white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">' + escapeHtml(preview) + '</p>';
+                html += '<p style="font-size:15px;line-height:1.4;color:#374151;white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;">' + escapeHtml(preview) + '</p>';
                 html += '<div style="display:flex;justify-content:flex-end;margin-top:10px;">';
                 html += '<div class="menu-wrapper">';
                 html += '<button class="more-btn" data-menu="' + d.id + '">•••</button>';
@@ -433,7 +424,6 @@
             list.innerHTML = html;
         }
 
-        // ===== 事件委托 =====
         document.getElementById('diary-list').addEventListener('click', function(e) {
             var target = e.target;
 
@@ -487,7 +477,7 @@
                 html += '<span class="date-text" style="font-size:14px;color:#6b7280;">' + d.date + ' ' + weekDay + ' ' + d.time + (d.mood ? ' ' + d.mood : '') + '</span>';
                 html += '<span class="days-left" style="font-size:11px;color:#9ca3af;">' + daysLeft + '天后删除</span>';
                 html += '</div>';
-                html += '<p style="font-size:15px;line-height:1.6;color:#374151;margin-bottom:10px;white-space:pre-wrap;">' + escapeHtml(d.content) + '</p>';
+                html += '<p style="font-size:15px;line-height:1.4;color:#374151;margin-bottom:10px;white-space:pre-wrap;">' + escapeHtml(d.content) + '</p>';
                 html += '<div style="display:flex;gap:8px;justify-content:flex-end;">';
                 html += '<button class="action-btn restore-btn" onclick="restoreDiary(' + d.id + ')">↩️ 恢复</button>';
                 html += '<button class="action-btn perm-delete-btn" onclick="permDelete(' + d.id + ')">永久删除</button>';
@@ -496,7 +486,6 @@
             list.innerHTML = html;
         }
 
-        // 自动清理过期
         (function() {
             var trash = JSON.parse(localStorage.getItem('trash') || '[]');
             var now = Date.now();
