@@ -12,7 +12,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2ff; min-height: 100vh; transition: background 0.3s, color 0.3s; }
         
-        /* 夜间模式 */
         body.dark { background: #1a1a1a; color: #d4d4d4; }
         body.dark .diary-card { background: #2a2a2a; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
         body.dark .diary-card p { color: #c8c8c8 !important; }
@@ -45,10 +44,10 @@
         body.dark .days-left { color: #666 !important; }
         body.dark .search-box { background: #2a2a2a; border-color: #444; color: #d4d4d4; }
         body.dark .search-box:focus { border-color: #7c3aed; }
-        body.dark .search-wrapper { background: #1f1f1f; }
+        body.dark .search-wrapper { background: #1a1a1a; }
         body.dark .view-date { color: #999 !important; }
 
-        .diary-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; position: relative; transition: transform 0.1s, background 0.3s, box-shadow 0.3s; }
+        .diary-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; position: relative; transition: background 0.3s, box-shadow 0.3s; }
         .diary-card:active { transform: scale(0.98); }
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; font-size: 32px; border: none; box-shadow: 0 4px 15px rgba(124,58,237,0.4); cursor: pointer; z-index: 100; display: flex; align-items: center; justify-content: center; }
         .fab:hover { transform: scale(1.1); }
@@ -77,30 +76,33 @@
             font-size: 18px; 
             color: #9ca3af; 
             cursor: pointer; 
-            padding: 4px 8px; 
+            padding: 4px 12px; 
             border-radius: 8px;
             letter-spacing: 2px;
             transition: background 0.2s, color 0.2s;
+            position: relative;
+            z-index: 5;
         }
         .more-btn:hover { background: #f3f4f6; color: #6b7280; }
 
         .popup-menu {
             display: none;
             position: absolute;
-            bottom: 45px;
-            right: 12px;
+            top: 100%;
+            right: 0;
+            margin-top: 4px;
             background: white;
             border-radius: 14px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.18);
             overflow: hidden;
-            z-index: 50;
-            min-width: 120px;
+            z-index: 999;
+            min-width: 130px;
             animation: popIn 0.15s ease;
             transition: background 0.3s;
         }
         .popup-menu.show { display: block; }
         @keyframes popIn {
-            from { opacity: 0; transform: scale(0.9) translateY(5px); }
+            from { opacity: 0; transform: scale(0.9) translateY(-5px); }
             to { opacity: 1; transform: scale(1) translateY(0); }
         }
         .popup-menu-item {
@@ -120,8 +122,10 @@
         .popup-menu-item:not(:last-child) { border-bottom: 1px solid #f3f4f6; }
         .popup-menu-item.danger { color: #ef4444; }
 
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 40; }
-        .overlay.show { display: block; }
+        .menu-wrapper {
+            position: relative;
+            display: inline-block;
+        }
 
         .theme-toggle {
             background: none;
@@ -139,7 +143,7 @@
 
         .search-wrapper {
             padding: 12px 16px;
-            background: white;
+            background: #f0f2ff;
             position: sticky;
             top: 100px;
             z-index: 8;
@@ -152,10 +156,10 @@
             border-radius: 12px;
             font-size: 14px;
             outline: none;
-            background: #f9fafb;
+            background: white;
             transition: background 0.3s, border-color 0.3s, color 0.3s;
         }
-        .search-box:focus { border-color: #7c3aed; background: white; }
+        .search-box:focus { border-color: #7c3aed; }
         body.dark .search-box:focus { background: #333; }
 
         .view-content {
@@ -198,10 +202,8 @@
 
     <button class="fab" id="fab-btn" onclick="openModal()">+</button>
 
-    <div class="overlay" id="overlay" onclick="closeAllMenus()"></div>
-
     <!-- 查看日记弹窗 -->
-    <div class="modal" id="view-modal">
+    <div class="modal" id="view-modal" onclick="closeViewModalOutside(event)">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <span class="view-date" id="view-date" style="font-size:14px; color:#6b7280;"></span>
@@ -213,7 +215,7 @@
     </div>
 
     <!-- 编辑日记弹窗 -->
-    <div class="modal" id="modal">
+    <div class="modal" id="modal" onclick="closeModalOutside(event)">
         <div class="modal-content">
             <h2 style="font-size:18px; font-weight:600; margin-bottom:16px;" id="modal-title">写日记</h2>
             <p style="font-size:14px; color:#6b7280; margin-bottom:8px;">今天心情如何？</p>
@@ -235,8 +237,15 @@
         var selectedMood = '';
         var currentTab = 'diary';
         var editingId = null;
+        var openMenuId = null;
 
-        // 主题切换
+        // 点击页面任意位置关闭菜单
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.menu-wrapper')) {
+                closeAllMenus();
+            }
+        });
+
         function toggleTheme() {
             var isDark = document.body.classList.toggle('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
@@ -261,15 +270,11 @@
             if (tab === 'trash') renderTrash();
         }
 
-        // 查看日记
         function viewDiary(id) {
             var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
             var item = null;
             for (var i = 0; i < diaries.length; i++) {
-                if (diaries[i].id === id) {
-                    item = diaries[i];
-                    break;
-                }
+                if (diaries[i].id === id) { item = diaries[i]; break; }
             }
             if (!item) return;
             document.getElementById('view-date').textContent = item.date + ' ' + item.time;
@@ -282,7 +287,14 @@
             document.getElementById('view-modal').classList.remove('active');
         }
 
-        // 新建日记
+        function closeViewModalOutside(e) {
+            if (e.target === document.getElementById('view-modal')) closeViewModal();
+        }
+
+        function closeModalOutside(e) {
+            if (e.target === document.getElementById('modal')) closeModal();
+        }
+
         function openModal() {
             editingId = null;
             document.getElementById('modal-title').textContent = '写日记';
@@ -291,38 +303,30 @@
             selectedMood = '';
             document.getElementById('diary-content').value = '';
             var btns = document.querySelectorAll('.mood-btn');
-            for (var i = 0; i < btns.length; i++) {
-                btns[i].classList.remove('selected');
-            }
+            for (var i = 0; i < btns.length; i++) btns[i].classList.remove('selected');
         }
 
-        // 编辑日记
         function openEditModal(id) {
             closeAllMenus();
             var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
             var item = null;
             for (var i = 0; i < diaries.length; i++) {
-                if (diaries[i].id === id) {
-                    item = diaries[i];
-                    break;
-                }
+                if (diaries[i].id === id) { item = diaries[i]; break; }
             }
             if (!item) return;
 
             editingId = id;
             document.getElementById('modal-title').textContent = '编辑日记';
             document.getElementById('save-btn').textContent = '保存修改';
-            document.getElementById('modal').classList.add('active');
             document.getElementById('diary-content').value = item.content;
             selectedMood = item.mood;
 
             var btns = document.querySelectorAll('.mood-btn');
             for (var i = 0; i < btns.length; i++) {
                 btns[i].classList.remove('selected');
-                if (btns[i].textContent === item.mood) {
-                    btns[i].classList.add('selected');
-                }
+                if (btns[i].textContent === item.mood) btns[i].classList.add('selected');
             }
+            document.getElementById('modal').classList.add('active');
         }
 
         function closeModal() {
@@ -333,19 +337,13 @@
         function selectMood(btn, mood) {
             selectedMood = mood;
             var btns = document.querySelectorAll('.mood-btn');
-            for (var i = 0; i < btns.length; i++) {
-                btns[i].classList.remove('selected');
-            }
+            for (var i = 0; i < btns.length; i++) btns[i].classList.remove('selected');
             btn.classList.add('selected');
         }
 
         function saveDiary() {
             var content = document.getElementById('diary-content').value.trim();
-            if (!content) {
-                alert('请写点什么吧~');
-                return;
-            }
-
+            if (!content) { alert('请写点什么吧~'); return; }
             var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
 
             if (editingId) {
@@ -360,38 +358,42 @@
                 var now = new Date();
                 var dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
                 var timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-                var entry = {
-                    id: Date.now(),
-                    date: dateStr,
-                    time: timeStr,
-                    mood: selectedMood || '😊',
-                    content: content
-                };
-                diaries.unshift(entry);
+                diaries.unshift({ id: Date.now(), date: dateStr, time: timeStr, mood: selectedMood || '😊', content: content });
             }
-
             localStorage.setItem('diaries', JSON.stringify(diaries));
             closeModal();
             renderDiaries();
         }
 
         function toggleMenu(e, id) {
+            e.preventDefault();
             e.stopPropagation();
+            if (openMenuId === id) {
+                closeAllMenus();
+                return;
+            }
             closeAllMenus();
             var menu = document.getElementById('menu-' + id);
-            menu.classList.add('show');
-            document.getElementById('overlay').classList.add('show');
+            if (menu) {
+                menu.classList.add('show');
+                openMenuId = id;
+            }
         }
 
         function closeAllMenus() {
             var menus = document.querySelectorAll('.popup-menu');
-            for (var i = 0; i < menus.length; i++) {
-                menus[i].classList.remove('show');
-            }
-            document.getElementById('overlay').classList.remove('show');
+            for (var i = 0; i < menus.length; i++) menus[i].classList.remove('show');
+            openMenuId = null;
         }
 
-        function deleteDiary(e, id) {
+        function handleEdit(e, id) {
+            e.preventDefault();
+            e.stopPropagation();
+            openEditModal(id);
+        }
+
+        function handleDelete(e, id) {
+            e.preventDefault();
             e.stopPropagation();
             closeAllMenus();
             if (!confirm('移入回收站？')) return;
@@ -399,10 +401,7 @@
             var trash = JSON.parse(localStorage.getItem('trash') || '[]');
             var item = null;
             for (var i = 0; i < diaries.length; i++) {
-                if (diaries[i].id === id) {
-                    item = diaries[i];
-                    break;
-                }
+                if (diaries[i].id === id) { item = diaries[i]; break; }
             }
             if (item) {
                 item.deletedAt = Date.now();
@@ -420,10 +419,7 @@
             var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
             var item = null;
             for (var i = 0; i < trash.length; i++) {
-                if (trash[i].id === id) {
-                    item = trash[i];
-                    break;
-                }
+                if (trash[i].id === id) { item = trash[i]; break; }
             }
             if (item) {
                 delete item.deletedAt;
@@ -463,26 +459,24 @@
         function updateTrashBadge() {
             var trash = JSON.parse(localStorage.getItem('trash') || '[]');
             var badge = document.getElementById('trash-badge');
-            if (trash.length > 0) {
-                badge.style.display = 'inline';
-                badge.textContent = trash.length;
-            } else {
-                badge.style.display = 'none';
-            }
+            if (trash.length > 0) { badge.style.display = 'inline'; badge.textContent = trash.length; }
+            else { badge.style.display = 'none'; }
+        }
+
+        function handleCardClick(e, id) {
+            // 如果点击的是菜单区域，不打开查看
+            if (e.target.closest('.menu-wrapper')) return;
+            viewDiary(id);
         }
 
         function renderDiaries() {
             var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
             var searchText = document.getElementById('search-box').value.trim().toLowerCase();
-            
-            // 搜索过滤
             if (searchText) {
                 diaries = diaries.filter(function(d) {
-                    return d.content.toLowerCase().indexOf(searchText) !== -1 ||
-                           d.date.indexOf(searchText) !== -1;
+                    return d.content.toLowerCase().indexOf(searchText) !== -1 || d.date.indexOf(searchText) !== -1;
                 });
             }
-
             var list = document.getElementById('diary-list');
             if (diaries.length === 0 && !searchText) {
                 list.innerHTML = '<div class="empty-state"><p style="font-size:48px; margin-bottom:16px;">📝</p><p style="font-size:16px;">还没有日记</p><p style="font-size:14px; margin-top:8px;">点击右下角 + 开始写第一篇吧</p></div>';
@@ -496,22 +490,30 @@
             for (var i = 0; i < diaries.length; i++) {
                 var d = diaries[i];
                 var preview = d.content.length > 80 ? d.content.substring(0, 80) + '...' : d.content;
-                html += '<div class="diary-card" onclick="viewDiary(' + d.id + ')">';
+                html += '<div class="diary-card" onclick="handleCardClick(event,' + d.id + ')">';
                 html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">';
                 html += '<span class="date-text" style="font-size:14px; color:#6b7280;">' + d.date + ' ' + d.time + '</span>';
                 html += '<span style="font-size:20px;">' + d.mood + '</span>';
                 html += '</div>';
-                html += '<p style="font-size:15px; line-height:1.6; color:#374151; white-space:pre-wrap; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;">' + preview + '</p>';
-                html += '<div style="display:flex; justify-content:flex-end; margin-top:10px; position:relative;">';
+                html += '<p style="font-size:15px; line-height:1.6; color:#374151; white-space:pre-wrap; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;">' + escapeHtml(preview) + '</p>';
+                html += '<div style="display:flex; justify-content:flex-end; margin-top:10px;">';
+                html += '<div class="menu-wrapper">';
                 html += '<button class="more-btn" onclick="toggleMenu(event,' + d.id + ')">•••</button>';
                 html += '<div class="popup-menu" id="menu-' + d.id + '">';
-                html += '<button class="popup-menu-item" onclick="event.stopPropagation(); openEditModal(' + d.id + ')">编辑</button>';
-                html += '<button class="popup-menu-item danger" onclick="deleteDiary(event,' + d.id + ')">删除</button>';
+                html += '<button class="popup-menu-item" onclick="handleEdit(event,' + d.id + ')">✏️ 编辑</button>';
+                html += '<button class="popup-menu-item danger" onclick="handleDelete(event,' + d.id + ')">🗑️ 删除</button>';
+                html += '</div>';
                 html += '</div>';
                 html += '</div>';
                 html += '</div>';
             }
             list.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         function renderTrash() {
@@ -530,7 +532,7 @@
                 html += '<span class="date-text" style="font-size:14px; color:#6b7280;">' + d.date + ' ' + d.time + ' ' + d.mood + '</span>';
                 html += '<span class="days-left" style="font-size:11px; color:#9ca3af;">' + daysLeft + '天后自动删除</span>';
                 html += '</div>';
-                html += '<p style="font-size:15px; line-height:1.6; color:#374151; margin-bottom:10px; white-space:pre-wrap;">' + d.content + '</p>';
+                html += '<p style="font-size:15px; line-height:1.6; color:#374151; margin-bottom:10px; white-space:pre-wrap;">' + escapeHtml(d.content) + '</p>';
                 html += '<div style="display:flex; gap:8px; justify-content:flex-end;">';
                 html += '<button class="action-btn restore-btn" onclick="restoreDiary(' + d.id + ')">↩️ 恢复</button>';
                 html += '<button class="action-btn perm-delete-btn" onclick="permDelete(' + d.id + ')">永久删除</button>';
@@ -545,7 +547,7 @@
         updateTrashBadge();
 
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+            navigator.serviceWorker.register('sw.js').catch(function(){});
         }
     </script>
 </body>
