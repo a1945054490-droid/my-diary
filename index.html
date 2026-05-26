@@ -10,31 +10,62 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2ff; min-height: 100vh; }
-        .diary-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; position: relative; transition: transform 0.1s; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f2ff; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+        
+        /* 夜间模式 */
+        body.dark { background: #1a1a1a; color: #d4d4d4; }
+        body.dark .diary-card { background: #2a2a2a; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        body.dark .diary-card p { color: #c8c8c8 !important; }
+        body.dark .diary-card .date-text { color: #999 !important; }
+        body.dark .header { background: linear-gradient(135deg, #4a1d96, #312e81); }
+        body.dark .tab-bar { background: #1f1f1f; border-bottom-color: #333; }
+        body.dark .tab { color: #888; }
+        body.dark .tab.active { color: #a78bfa; border-bottom-color: #a78bfa; }
+        body.dark .modal-content { background: #2a2a2a; color: #d4d4d4; }
+        body.dark .modal-content h2 { color: #e0e0e0; }
+        body.dark .modal-content p { color: #999 !important; }
+        body.dark textarea { background: #333; border-color: #444; color: #d4d4d4; }
+        body.dark textarea:focus { border-color: #7c3aed; }
+        body.dark .mood-btn { background: #333; border-color: #444; }
+        body.dark .mood-btn.selected { border-color: #7c3aed; background: #3d2a5c; }
+        body.dark .popup-menu { background: #333; box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+        body.dark .popup-menu-item { color: #d4d4d4; }
+        body.dark .popup-menu-item:hover { background: #3a3a3a; }
+        body.dark .popup-menu-item:not(:last-child) { border-bottom-color: #444; }
+        body.dark .popup-menu-item.danger { color: #f87171; }
+        body.dark .more-btn { color: #777; }
+        body.dark .more-btn:hover { background: #3a3a3a; color: #aaa; }
+        body.dark .empty-state { color: #666; }
+        body.dark .cancel-btn { border-color: #444; color: #d4d4d4; }
+        body.dark .trash-info { color: #666 !important; }
+        body.dark .trash-empty-btn { background: #3a2020; color: #f87171; }
+        body.dark .restore-btn { background: #1a3a2a; color: #6ee7b7; }
+        body.dark .perm-delete-btn { background: #3a2020; color: #f87171; }
+        body.dark .days-left { color: #666 !important; }
+
+        .diary-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; position: relative; transition: transform 0.1s, background 0.3s, box-shadow 0.3s; }
         .diary-card:active { transform: scale(0.98); }
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; font-size: 32px; border: none; box-shadow: 0 4px 15px rgba(124,58,237,0.4); cursor: pointer; z-index: 100; display: flex; align-items: center; justify-content: center; }
         .fab:hover { transform: scale(1.1); }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
         .modal.active { display: flex; }
-        .modal-content { background: white; border-radius: 20px; padding: 24px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
-        .mood-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #e5e7eb; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; background: white; }
+        .modal-content { background: white; border-radius: 20px; padding: 24px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; transition: background 0.3s, color 0.3s; }
+        .mood-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #e5e7eb; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; background: white; transition: background 0.3s, border-color 0.3s; }
         .mood-btn.selected { border-color: #7c3aed; background: #f3e8ff; }
-        textarea { width: 100%; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; font-size: 16px; resize: none; outline: none; min-height: 150px; }
+        textarea { width: 100%; border: 1px solid #e5e7eb; border-radius: 12px; padding: 12px; font-size: 16px; resize: none; outline: none; min-height: 150px; transition: background 0.3s, border-color 0.3s, color 0.3s; }
         textarea:focus { border-color: #7c3aed; }
         .save-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; margin-top: 12px; }
-        .header { background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; padding: 16px 20px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
+        .header { background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; padding: 16px 20px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; transition: background 0.3s; }
         .header h1 { font-size: 20px; font-weight: 600; }
         .empty-state { text-align: center; padding: 60px 20px; color: #9ca3af; }
         .action-btn { font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; border: none; }
         .restore-btn { color: #10b981; background: #ecfdf5; }
         .perm-delete-btn { color: #ef4444; background: #fef2f2; }
-        .tab-bar { display: flex; background: white; border-bottom: 1px solid #e5e7eb; position: sticky; top: 56px; z-index: 9; }
-        .tab { flex: 1; padding: 12px; text-align: center; font-size: 14px; cursor: pointer; color: #6b7280; border-bottom: 2px solid transparent; }
+        .tab-bar { display: flex; background: white; border-bottom: 1px solid #e5e7eb; position: sticky; top: 56px; z-index: 9; transition: background 0.3s, border-color 0.3s; }
+        .tab { flex: 1; padding: 12px; text-align: center; font-size: 14px; cursor: pointer; color: #6b7280; border-bottom: 2px solid transparent; transition: color 0.3s; }
         .tab.active { color: #7c3aed; border-bottom-color: #7c3aed; font-weight: 600; }
         .badge { background: #ef4444; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 4px; }
-        
-        /* 三点菜单按钮 */
+
         .more-btn { 
             background: none; 
             border: none; 
@@ -44,10 +75,10 @@
             padding: 4px 8px; 
             border-radius: 8px;
             letter-spacing: 2px;
+            transition: background 0.2s, color 0.2s;
         }
         .more-btn:hover { background: #f3f4f6; color: #6b7280; }
-        
-        /* 弹出菜单 */
+
         .popup-menu {
             display: none;
             position: absolute;
@@ -58,8 +89,9 @@
             box-shadow: 0 8px 30px rgba(0,0,0,0.15);
             overflow: hidden;
             z-index: 50;
-            min-width: 140px;
+            min-width: 120px;
             animation: popIn 0.15s ease;
+            transition: background 0.3s;
         }
         .popup-menu.show { display: block; }
         @keyframes popIn {
@@ -69,8 +101,7 @@
         .popup-menu-item {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 14px 18px;
+            padding: 14px 20px;
             font-size: 15px;
             cursor: pointer;
             border: none;
@@ -78,22 +109,36 @@
             width: 100%;
             text-align: left;
             transition: background 0.1s;
+            color: #374151;
         }
         .popup-menu-item:hover { background: #f9fafb; }
         .popup-menu-item:not(:last-child) { border-bottom: 1px solid #f3f4f6; }
         .popup-menu-item.danger { color: #ef4444; }
-        .popup-menu-item .icon { font-size: 16px; }
-        
-        /* 遮罩层 */
+
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 40; }
         .overlay.show { display: block; }
+
+        /* 夜间模式切换按钮 */
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .theme-toggle:hover { background: rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
     <div class="header">
-        <div></div>
+        <div style="width:36px;"></div>
         <h1>我的日记</h1>
-        <div></div>
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">🌙</button>
     </div>
 
     <div class="tab-bar">
@@ -107,15 +152,14 @@
 
     <div id="trash-page" style="padding: 16px; display:none;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <p style="font-size:13px; color:#9ca3af;">删除的日记将保留30天</p>
-            <button onclick="emptyTrash()" style="font-size:12px; color:#ef4444; background:#fef2f2; border:none; padding:6px 12px; border-radius:8px; cursor:pointer;">清空回收站</button>
+            <p class="trash-info" style="font-size:13px; color:#9ca3af;">删除的日记将保留30天</p>
+            <button class="trash-empty-btn" onclick="emptyTrash()" style="font-size:12px; color:#ef4444; background:#fef2f2; border:none; padding:6px 12px; border-radius:8px; cursor:pointer;">清空回收站</button>
         </div>
         <div id="trash-list"></div>
     </div>
 
     <button class="fab" id="fab-btn" onclick="openModal()">+</button>
 
-    <!-- 点击其他地方关闭菜单的遮罩 -->
     <div class="overlay" id="overlay" onclick="closeAllMenus()"></div>
 
     <div class="modal" id="modal">
@@ -132,7 +176,7 @@
             </div>
             <textarea id="diary-content" placeholder="今天发生了什么..."></textarea>
             <button class="save-btn" id="save-btn" onclick="saveDiary()">保存日记</button>
-            <button style="width:100%; padding:14px; background:none; border:1px solid #e5e7eb; border-radius:12px; font-size:16px; cursor:pointer; margin-top:8px;" onclick="closeModal()">取消</button>
+            <button class="cancel-btn" style="width:100%; padding:14px; background:none; border:1px solid #e5e7eb; border-radius:12px; font-size:16px; cursor:pointer; margin-top:8px;" onclick="closeModal()">取消</button>
         </div>
     </div>
 
@@ -140,6 +184,21 @@
         var selectedMood = '';
         var currentTab = 'diary';
         var editingId = null;
+
+        // 主题切换
+        function toggleTheme() {
+            var isDark = document.body.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('theme-toggle').textContent = isDark ? '☀️' : '🌙';
+        }
+
+        function loadTheme() {
+            var theme = localStorage.getItem('theme');
+            if (theme === 'dark') {
+                document.body.classList.add('dark');
+                document.getElementById('theme-toggle').textContent = '☀️';
+            }
+        }
 
         function switchTab(tab) {
             currentTab = tab;
@@ -350,15 +409,15 @@
                 var d = diaries[i];
                 html += '<div class="diary-card" onclick="openEditModal(' + d.id + ')">';
                 html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">';
-                html += '<span style="font-size:14px; color:#6b7280;">' + d.date + ' ' + d.time + '</span>';
+                html += '<span class="date-text" style="font-size:14px; color:#6b7280;">' + d.date + ' ' + d.time + '</span>';
                 html += '<span style="font-size:20px;">' + d.mood + '</span>';
                 html += '</div>';
                 html += '<p style="font-size:15px; line-height:1.6; color:#374151; white-space:pre-wrap;">' + d.content + '</p>';
                 html += '<div style="display:flex; justify-content:flex-end; margin-top:10px; position:relative;">';
                 html += '<button class="more-btn" onclick="toggleMenu(event,' + d.id + ')">•••</button>';
                 html += '<div class="popup-menu" id="menu-' + d.id + '">';
-                html += '<button class="popup-menu-item" onclick="event.stopPropagation(); closeAllMenus(); openEditModal(' + d.id + ')"><span>编辑</span><span class="icon">✏️</span></button>';
-                html += '<button class="popup-menu-item danger" onclick="deleteDiary(event,' + d.id + ')"><span>删除</span><span class="icon">🗑️</span></button>';
+                html += '<button class="popup-menu-item" onclick="event.stopPropagation(); closeAllMenus(); openEditModal(' + d.id + ')">编辑</button>';
+                html += '<button class="popup-menu-item danger" onclick="deleteDiary(event,' + d.id + ')">删除</button>';
                 html += '</div>';
                 html += '</div>';
                 html += '</div>';
@@ -379,8 +438,8 @@
                 var daysLeft = 30 - Math.floor((Date.now() - d.deletedAt) / (24*60*60*1000));
                 html += '<div class="diary-card" style="opacity:0.8; cursor:default;">';
                 html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">';
-                html += '<span style="font-size:14px; color:#6b7280;">' + d.date + ' ' + d.time + ' ' + d.mood + '</span>';
-                html += '<span style="font-size:11px; color:#9ca3af;">' + daysLeft + '天后自动删除</span>';
+                html += '<span class="date-text" style="font-size:14px; color:#6b7280;">' + d.date + ' ' + d.time + ' ' + d.mood + '</span>';
+                html += '<span class="days-left" style="font-size:11px; color:#9ca3af;">' + daysLeft + '天后自动删除</span>';
                 html += '</div>';
                 html += '<p style="font-size:15px; line-height:1.6; color:#374151; margin-bottom:10px; white-space:pre-wrap;">' + d.content + '</p>';
                 html += '<div style="display:flex; gap:8px; justify-content:flex-end;">';
@@ -391,6 +450,7 @@
             list.innerHTML = html;
         }
 
+        loadTheme();
         autoCleanTrash();
         renderDiaries();
         updateTrashBadge();
