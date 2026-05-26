@@ -24,11 +24,10 @@
         .save-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; margin-top: 12px; }
         .header { background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; padding: 16px 20px; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center; }
         .header h1 { font-size: 20px; font-weight: 600; }
-        .header-btn { background: none; border: none; color: white; font-size: 14px; cursor: pointer; padding: 6px 12px; border-radius: 8px; }
-        .header-btn:hover { background: rgba(255,255,255,0.2); }
         .empty-state { text-align: center; padding: 60px 20px; color: #9ca3af; }
         .action-btn { font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 6px; border: none; }
         .delete-btn { color: #ef4444; background: #fef2f2; }
+        .edit-btn { color: #7c3aed; background: #f3e8ff; }
         .restore-btn { color: #10b981; background: #ecfdf5; }
         .perm-delete-btn { color: #ef4444; background: #fef2f2; }
         .tab-bar { display: flex; background: white; border-bottom: 1px solid #e5e7eb; position: sticky; top: 56px; z-index: 9; }
@@ -65,7 +64,7 @@
 
     <div class="modal" id="modal">
         <div class="modal-content">
-            <h2 style="font-size:18px; font-weight:600; margin-bottom:16px;">写日记</h2>
+            <h2 style="font-size:18px; font-weight:600; margin-bottom:16px;" id="modal-title">写日记</h2>
             <p style="font-size:14px; color:#6b7280; margin-bottom:8px;">今天心情如何？</p>
             <div style="display:flex; gap:10px; margin-bottom:16px;" id="mood-selector">
                 <button class="mood-btn" onclick="selectMood(this, '😊')">😊</button>
@@ -76,7 +75,7 @@
                 <button class="mood-btn" onclick="selectMood(this, '😎')">😎</button>
             </div>
             <textarea id="diary-content" placeholder="今天发生了什么..."></textarea>
-            <button class="save-btn" onclick="saveDiary()">保存日记</button>
+            <button class="save-btn" id="save-btn" onclick="saveDiary()">保存日记</button>
             <button style="width:100%; padding:14px; background:none; border:1px solid #e5e7eb; border-radius:12px; font-size:16px; cursor:pointer; margin-top:8px;" onclick="closeModal()">取消</button>
         </div>
     </div>
@@ -84,6 +83,7 @@
     <script>
         var selectedMood = '';
         var currentTab = 'diary';
+        var editingId = null;
 
         function switchTab(tab) {
             currentTab = tab;
@@ -96,6 +96,9 @@
         }
 
         function openModal() {
+            editingId = null;
+            document.getElementById('modal-title').textContent = '写日记';
+            document.getElementById('save-btn').textContent = '保存日记';
             document.getElementById('modal').classList.add('active');
             selectedMood = '';
             document.getElementById('diary-content').value = '';
@@ -105,8 +108,36 @@
             }
         }
 
+        function openEditModal(id) {
+            var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
+            var item = null;
+            for (var i = 0; i < diaries.length; i++) {
+                if (diaries[i].id === id) {
+                    item = diaries[i];
+                    break;
+                }
+            }
+            if (!item) return;
+
+            editingId = id;
+            document.getElementById('modal-title').textContent = '编辑日记';
+            document.getElementById('save-btn').textContent = '保存修改';
+            document.getElementById('modal').classList.add('active');
+            document.getElementById('diary-content').value = item.content;
+            selectedMood = item.mood;
+
+            var btns = document.querySelectorAll('.mood-btn');
+            for (var i = 0; i < btns.length; i++) {
+                btns[i].classList.remove('selected');
+                if (btns[i].textContent === item.mood) {
+                    btns[i].classList.add('selected');
+                }
+            }
+        }
+
         function closeModal() {
             document.getElementById('modal').classList.remove('active');
+            editingId = null;
         }
 
         function selectMood(btn, mood) {
@@ -124,24 +155,38 @@
                 alert('请写点什么吧~');
                 return;
             }
+
             var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
-            var now = new Date();
-            var dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
-            var timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
-            var entry = {
-                id: Date.now(),
-                date: dateStr,
-                time: timeStr,
-                mood: selectedMood || '😊',
-                content: content
-            };
-            diaries.unshift(entry);
+
+            if (editingId) {
+                // 编辑模式：只修改内容和心情，不改日期
+                for (var i = 0; i < diaries.length; i++) {
+                    if (diaries[i].id === editingId) {
+                        diaries[i].content = content;
+                        diaries[i].mood = selectedMood || diaries[i].mood;
+                        break;
+                    }
+                }
+            } else {
+                // 新建模式
+                var now = new Date();
+                var dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+                var timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+                var entry = {
+                    id: Date.now(),
+                    date: dateStr,
+                    time: timeStr,
+                    mood: selectedMood || '😊',
+                    content: content
+                };
+                diaries.unshift(entry);
+            }
+
             localStorage.setItem('diaries', JSON.stringify(diaries));
             closeModal();
             renderDiaries();
         }
 
-        // 删除 -> 移入回收站
         function deleteDiary(id) {
             if (!confirm('移入回收站？')) return;
             var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
@@ -164,7 +209,6 @@
             updateTrashBadge();
         }
 
-        // 从回收站恢复
         function restoreDiary(id) {
             var trash = JSON.parse(localStorage.getItem('trash') || '[]');
             var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
@@ -186,7 +230,6 @@
             updateTrashBadge();
         }
 
-        // 永久删除
         function permDelete(id) {
             if (!confirm('永久删除？此操作不可恢复！')) return;
             var trash = JSON.parse(localStorage.getItem('trash') || '[]');
@@ -196,7 +239,6 @@
             updateTrashBadge();
         }
 
-        // 清空回收站
         function emptyTrash() {
             if (!confirm('确定清空回收站？所有日记将永久删除！')) return;
             localStorage.setItem('trash', '[]');
@@ -204,7 +246,6 @@
             updateTrashBadge();
         }
 
-        // 自动清理超过30天的
         function autoCleanTrash() {
             var trash = JSON.parse(localStorage.getItem('trash') || '[]');
             var now = Date.now();
@@ -237,11 +278,12 @@
                 html += '<div class="diary-card">';
                 html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">';
                 html += '<span style="font-size:14px; color:#6b7280;">' + d.date + ' ' + d.time + '</span>';
-                html += '<span style="display:flex; align-items:center; gap:8px;">';
+                html += '<span style="display:flex; align-items:center; gap:6px;">';
                 html += '<span style="font-size:20px;">' + d.mood + '</span>';
+                html += '<button class="action-btn edit-btn" onclick="openEditModal(' + d.id + ')">编辑</button>';
                 html += '<button class="action-btn delete-btn" onclick="deleteDiary(' + d.id + ')">删除</button>';
                 html += '</span></div>';
-                html += '<p style="font-size:15px; line-height:1.6; color:#374151;">' + d.content + '</p>';
+                html += '<p style="font-size:15px; line-height:1.6; color:#374151; white-space:pre-wrap;">' + d.content + '</p>';
                 html += '</div>';
             }
             list.innerHTML = html;
@@ -263,7 +305,7 @@
                 html += '<span style="font-size:14px; color:#6b7280;">' + d.date + ' ' + d.time + ' ' + d.mood + '</span>';
                 html += '<span style="font-size:11px; color:#9ca3af;">' + daysLeft + '天后自动删除</span>';
                 html += '</div>';
-                html += '<p style="font-size:15px; line-height:1.6; color:#374151; margin-bottom:10px;">' + d.content + '</p>';
+                html += '<p style="font-size:15px; line-height:1.6; color:#374151; margin-bottom:10px; white-space:pre-wrap;">' + d.content + '</p>';
                 html += '<div style="display:flex; gap:8px; justify-content:flex-end;">';
                 html += '<button class="action-btn restore-btn" onclick="restoreDiary(' + d.id + ')">↩️ 恢复</button>';
                 html += '<button class="action-btn perm-delete-btn" onclick="permDelete(' + d.id + ')">永久删除</button>';
@@ -272,7 +314,6 @@
             list.innerHTML = html;
         }
 
-        // 初始化
         autoCleanTrash();
         renderDiaries();
         updateTrashBadge();
