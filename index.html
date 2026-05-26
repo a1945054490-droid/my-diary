@@ -108,7 +108,6 @@
 
         .view-content { font-size: 16px; line-height: 1.8; color: #374151; white-space: pre-wrap; word-break: break-word; }
 
-        /* 自定义确认弹窗 */
         .confirm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.45); z-index: 300; align-items: center; justify-content: center; }
         .confirm-modal.active { display: flex; }
         .confirm-modal-box { background: white; border-radius: 16px; padding: 24px; width: 80%; max-width: 320px; text-align: center; }
@@ -196,7 +195,7 @@
         var editingId = null;
         var confirmCallback = null;
 
-        // ===== 自定义确认弹窗（替代 confirm()，不阻塞线程） =====
+        // ===== 修复核心：确认弹窗逻辑 =====
         function showConfirm(msg, callback) {
             document.getElementById('confirm-msg').textContent = msg;
             document.getElementById('confirm-modal').classList.add('active');
@@ -204,11 +203,13 @@
         }
         function hideConfirm() {
             document.getElementById('confirm-modal').classList.remove('active');
-            confirmCallback = null;
         }
         function confirmAction() {
+            // 关键修复：先保存回调引用，再关闭弹窗，最后执行回调
+            var cb = confirmCallback;
+            confirmCallback = null;
             hideConfirm();
-            if (confirmCallback) confirmCallback();
+            if (cb) cb();
         }
 
         // ===== 主题 =====
@@ -313,27 +314,21 @@
         }
 
         // ===== 删除（移入回收站） =====
-        var pendingDeleteId = null;
         function deleteDiary(id) {
-            pendingDeleteId = id;
-            showConfirm('确定移入回收站？', doDelete);
-        }
-        function doDelete() {
-            var id = pendingDeleteId;
-            if (!id) return;
-            var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
-            var trash = JSON.parse(localStorage.getItem('trash') || '[]');
-            var item = diaries.find(function(d) { return d.id === id; });
-            if (item) {
-                item.deletedAt = Date.now();
-                trash.unshift(item);
-                localStorage.setItem('trash', JSON.stringify(trash));
-            }
-            diaries = diaries.filter(function(d) { return d.id !== id; });
-            localStorage.setItem('diaries', JSON.stringify(diaries));
-            pendingDeleteId = null;
-            renderDiaries();
-            updateTrashBadge();
+            showConfirm('确定移入回收站？', function() {
+                var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
+                var trash = JSON.parse(localStorage.getItem('trash') || '[]');
+                var item = diaries.find(function(d) { return d.id === id; });
+                if (item) {
+                    item.deletedAt = Date.now();
+                    trash.unshift(item);
+                    localStorage.setItem('trash', JSON.stringify(trash));
+                }
+                diaries = diaries.filter(function(d) { return d.id !== id; });
+                localStorage.setItem('diaries', JSON.stringify(diaries));
+                renderDiaries();
+                updateTrashBadge();
+            });
         }
 
         // ===== 回收站 =====
@@ -347,12 +342,10 @@
             renderTrash(); updateTrashBadge();
         }
         function permDelete(id) {
-            pendingDeleteId = id;
             showConfirm('永久删除？不可恢复！', function() {
                 var trash = JSON.parse(localStorage.getItem('trash') || '[]');
-                trash = trash.filter(function(d) { return d.id !== pendingDeleteId; });
+                trash = trash.filter(function(d) { return d.id !== id; });
                 localStorage.setItem('trash', JSON.stringify(trash));
-                pendingDeleteId = null;
                 renderTrash(); updateTrashBadge();
             });
         }
@@ -406,11 +399,10 @@
             list.innerHTML = html;
         }
 
-        // ===== 事件委托（解决按钮不好用的根本方案） =====
+        // ===== 事件委托 =====
         document.getElementById('diary-list').addEventListener('click', function(e) {
             var target = e.target;
 
-            // 点击 ••• 按钮
             if (target.classList.contains('more-btn')) {
                 e.stopPropagation();
                 var menuId = target.getAttribute('data-menu');
@@ -421,7 +413,6 @@
                 return;
             }
 
-            // 点击编辑
             if (target.getAttribute('data-action') === 'edit') {
                 e.stopPropagation();
                 closeAllMenus();
@@ -430,7 +421,6 @@
                 return;
             }
 
-            // 点击删除
             if (target.getAttribute('data-action') === 'delete') {
                 e.stopPropagation();
                 closeAllMenus();
@@ -439,7 +429,6 @@
                 return;
             }
 
-            // 点击卡片 → 查看
             var card = target.closest('.diary-card');
             if (card && !target.closest('.menu-wrapper')) {
                 var id = Number(card.getAttribute('data-id'));
