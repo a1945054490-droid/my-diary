@@ -24,6 +24,7 @@
         body.dark .modal-content { background: #2a2a2a; color: #d4d4d4; }
         body.dark .modal-content h2 { color: #e0e0e0; }
         body.dark .modal-content p { color: #999 !important; }
+        body.dark .view-content { color: #d4d4d4 !important; }
         body.dark textarea { background: #333; border-color: #444; color: #d4d4d4; }
         body.dark textarea:focus { border-color: #7c3aed; }
         body.dark .mood-btn { background: #333; border-color: #444; }
@@ -42,6 +43,10 @@
         body.dark .restore-btn { background: #1a3a2a; color: #6ee7b7; }
         body.dark .perm-delete-btn { background: #3a2020; color: #f87171; }
         body.dark .days-left { color: #666 !important; }
+        body.dark .search-box { background: #2a2a2a; border-color: #444; color: #d4d4d4; }
+        body.dark .search-box:focus { border-color: #7c3aed; }
+        body.dark .search-wrapper { background: #1f1f1f; }
+        body.dark .view-date { color: #999 !important; }
 
         .diary-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); cursor: pointer; position: relative; transition: transform 0.1s, background 0.3s, box-shadow 0.3s; }
         .diary-card:active { transform: scale(0.98); }
@@ -118,7 +123,6 @@
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 40; }
         .overlay.show { display: block; }
 
-        /* 夜间模式切换按钮 */
         .theme-toggle {
             background: none;
             border: none;
@@ -132,6 +136,35 @@
             justify-content: center;
         }
         .theme-toggle:hover { background: rgba(255,255,255,0.1); }
+
+        .search-wrapper {
+            padding: 12px 16px;
+            background: white;
+            position: sticky;
+            top: 100px;
+            z-index: 8;
+            transition: background 0.3s;
+        }
+        .search-box {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 14px;
+            outline: none;
+            background: #f9fafb;
+            transition: background 0.3s, border-color 0.3s, color 0.3s;
+        }
+        .search-box:focus { border-color: #7c3aed; background: white; }
+        body.dark .search-box:focus { background: #333; }
+
+        .view-content {
+            font-size: 16px;
+            line-height: 1.8;
+            color: #374151;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
     </style>
 </head>
 <body>
@@ -146,8 +179,13 @@
         <div class="tab" id="tab-trash" onclick="switchTab('trash')">🗑️ 回收站 <span class="badge" id="trash-badge" style="display:none;">0</span></div>
     </div>
 
-    <div id="diary-page" style="padding: 16px;">
-        <div id="diary-list"></div>
+    <div id="diary-page">
+        <div class="search-wrapper" id="search-wrapper">
+            <input type="text" class="search-box" id="search-box" placeholder="🔍 搜索日记内容..." oninput="renderDiaries()">
+        </div>
+        <div style="padding: 0 16px 16px;">
+            <div id="diary-list"></div>
+        </div>
     </div>
 
     <div id="trash-page" style="padding: 16px; display:none;">
@@ -162,6 +200,19 @@
 
     <div class="overlay" id="overlay" onclick="closeAllMenus()"></div>
 
+    <!-- 查看日记弹窗 -->
+    <div class="modal" id="view-modal">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <span class="view-date" id="view-date" style="font-size:14px; color:#6b7280;"></span>
+                <span id="view-mood" style="font-size:24px;"></span>
+            </div>
+            <div class="view-content" id="view-content"></div>
+            <button class="cancel-btn" style="width:100%; padding:14px; background:none; border:1px solid #e5e7eb; border-radius:12px; font-size:16px; cursor:pointer; margin-top:20px;" onclick="closeViewModal()">关闭</button>
+        </div>
+    </div>
+
+    <!-- 编辑日记弹窗 -->
     <div class="modal" id="modal">
         <div class="modal-content">
             <h2 style="font-size:18px; font-weight:600; margin-bottom:16px;" id="modal-title">写日记</h2>
@@ -210,6 +261,28 @@
             if (tab === 'trash') renderTrash();
         }
 
+        // 查看日记
+        function viewDiary(id) {
+            var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
+            var item = null;
+            for (var i = 0; i < diaries.length; i++) {
+                if (diaries[i].id === id) {
+                    item = diaries[i];
+                    break;
+                }
+            }
+            if (!item) return;
+            document.getElementById('view-date').textContent = item.date + ' ' + item.time;
+            document.getElementById('view-mood').textContent = item.mood;
+            document.getElementById('view-content').textContent = item.content;
+            document.getElementById('view-modal').classList.add('active');
+        }
+
+        function closeViewModal() {
+            document.getElementById('view-modal').classList.remove('active');
+        }
+
+        // 新建日记
         function openModal() {
             editingId = null;
             document.getElementById('modal-title').textContent = '写日记';
@@ -223,6 +296,7 @@
             }
         }
 
+        // 编辑日记
         function openEditModal(id) {
             closeAllMenus();
             var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
@@ -399,24 +473,39 @@
 
         function renderDiaries() {
             var diaries = JSON.parse(localStorage.getItem('diaries') || '[]');
+            var searchText = document.getElementById('search-box').value.trim().toLowerCase();
+            
+            // 搜索过滤
+            if (searchText) {
+                diaries = diaries.filter(function(d) {
+                    return d.content.toLowerCase().indexOf(searchText) !== -1 ||
+                           d.date.indexOf(searchText) !== -1;
+                });
+            }
+
             var list = document.getElementById('diary-list');
-            if (diaries.length === 0) {
+            if (diaries.length === 0 && !searchText) {
                 list.innerHTML = '<div class="empty-state"><p style="font-size:48px; margin-bottom:16px;">📝</p><p style="font-size:16px;">还没有日记</p><p style="font-size:14px; margin-top:8px;">点击右下角 + 开始写第一篇吧</p></div>';
+                return;
+            }
+            if (diaries.length === 0 && searchText) {
+                list.innerHTML = '<div class="empty-state"><p style="font-size:48px; margin-bottom:16px;">🔍</p><p style="font-size:16px;">没有找到相关日记</p></div>';
                 return;
             }
             var html = '';
             for (var i = 0; i < diaries.length; i++) {
                 var d = diaries[i];
-                html += '<div class="diary-card" onclick="openEditModal(' + d.id + ')">';
+                var preview = d.content.length > 80 ? d.content.substring(0, 80) + '...' : d.content;
+                html += '<div class="diary-card" onclick="viewDiary(' + d.id + ')">';
                 html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">';
                 html += '<span class="date-text" style="font-size:14px; color:#6b7280;">' + d.date + ' ' + d.time + '</span>';
                 html += '<span style="font-size:20px;">' + d.mood + '</span>';
                 html += '</div>';
-                html += '<p style="font-size:15px; line-height:1.6; color:#374151; white-space:pre-wrap;">' + d.content + '</p>';
+                html += '<p style="font-size:15px; line-height:1.6; color:#374151; white-space:pre-wrap; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;">' + preview + '</p>';
                 html += '<div style="display:flex; justify-content:flex-end; margin-top:10px; position:relative;">';
                 html += '<button class="more-btn" onclick="toggleMenu(event,' + d.id + ')">•••</button>';
                 html += '<div class="popup-menu" id="menu-' + d.id + '">';
-                html += '<button class="popup-menu-item" onclick="event.stopPropagation(); closeAllMenus(); openEditModal(' + d.id + ')">编辑</button>';
+                html += '<button class="popup-menu-item" onclick="event.stopPropagation(); openEditModal(' + d.id + ')">编辑</button>';
                 html += '<button class="popup-menu-item danger" onclick="deleteDiary(event,' + d.id + ')">删除</button>';
                 html += '</div>';
                 html += '</div>';
